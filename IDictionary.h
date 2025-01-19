@@ -13,7 +13,8 @@ public:
     virtual Value& get(const Key& key) = 0; // Получение значения по ключу
     virtual const Value& get(const Key& key) const = 0; // Получение значения по ключу (константная версия)
     virtual Value& operator[](const Key& key) = 0; // Оператор доступа по ключу
-    virtual const Value& operator[](const Key& key) const = 0; // Оператор доступа по ключу (константная версия)
+    //virtual const Value& operator[](const Key& key) const = 0; // Оператор доступа по ключу (константная версия)
+    virtual void clear() = 0; // Очистка словаря
     virtual ~IDictionary() = default; // Виртуальный деструктор (для возможности наследования)
 };
 

@@ -34,6 +34,10 @@ public:
         this->arrayList = new DynamicArray<T>();
     }
 
+    ArraySequence(int capacity){
+        this->arrayList = new DynamicArray<T>(capacity);
+    }
+
     //Конструктор копирования - создает копию последовательности
     ArraySequence(const ArraySequence<T> &arraySequence){
         //просто используем конструктор DynamicArray, чтобы создать копию массива
@@ -107,6 +111,7 @@ public:
         return new_array;
     }
 
+    /*
     //Функция, которая выводит последовательность на экран
     void print() const override {
         std::cout << "[";
@@ -118,6 +123,7 @@ public:
         }
         std::cout << "]" << std::endl;
     }
+     */
 
     //Функция, которая возвращает массив, который хранит элементы последовательности
     DynamicArray<T>* getArray() const {
@@ -125,7 +131,7 @@ public:
     }
 
     //Оператор [], который возвращает элемент последовательности по индексу
-    T operator[](int index) const override {
+    T& operator[](int index) const override {
         return this->arrayList->get(index);
     }
 
@@ -144,20 +150,214 @@ public:
         return this;
     }
 
-    T* begin() {
-        return arrayList->begin();
+    T removeLast() {
+        if (this->arrayList->getLength() == 0) {
+            throw std::out_of_range("ArraySequence is empty");
+        }
+        T last = this->getLast();
+        this->remove(this->arrayList->getLength() - 1);
+        return last;
     }
 
-    T* end() {
-        return arrayList->end();
+
+    class Iterator {
+    private:
+        ArraySequence<T> *arraySequence;
+        int index;
+    public:
+        using iterator_category = std::random_access_iterator_tag;
+        using value_type = T;
+        using difference_type = std::ptrdiff_t;
+        using pointer = T *;
+        using reference = T &;
+
+        Iterator(ArraySequence<T> *arraySequence, int index) : arraySequence(arraySequence), index(index) {}
+
+        Iterator(const Iterator &it) : arraySequence(it.arraySequence), index(it.index) {}
+
+        Iterator &operator++() {
+            index++;
+            return *this;
+        }
+
+        Iterator operator++(int) {
+            Iterator it = *this;
+            index++;
+            return it;
+        }
+
+        Iterator &operator--() {
+            index--;
+            return *this;
+        }
+
+        Iterator operator--(int) {
+            Iterator it = *this;
+            index--;
+            return it;
+        }
+
+        Iterator &operator+=(difference_type n) {
+            index += n;
+            return *this;
+        }
+
+        Iterator operator+(difference_type n) const {
+            return Iterator(arraySequence, index + n);
+        }
+
+        Iterator &operator-=(difference_type n) {
+            index -= n;
+            return *this;
+        }
+
+        Iterator operator-(difference_type n) const {
+            return Iterator(arraySequence, index - n);
+        }
+
+        difference_type operator-(const Iterator &it) const {
+            return index - it.index;
+        }
+
+        bool operator==(const Iterator &it) const {
+            return index == it.index;
+        }
+
+        bool operator!=(const Iterator &it) const {
+            return index != it.index;
+        }
+
+        bool operator<(const Iterator &it) const {
+            return index < it.index;
+        }
+
+        bool operator>(const Iterator &it) const {
+            return index > it.index;
+        }
+
+        bool operator<=(const Iterator &it) const {
+            return index <= it.index;
+        }
+
+        bool operator>=(const Iterator &it) const {
+            return index >= it.index;
+        }
+
+        T &operator*() {
+            return arraySequence->get(index);
+        }
+
+        T *operator->() {
+            return &arraySequence->get(index);
+        }
+    };
+
+    class ConstIterator {
+    private:
+        const ArraySequence<T> *arraySequence;
+        int index;
+    public:
+        using iterator_category = std::random_access_iterator_tag;
+        using value_type = T;
+        using difference_type = std::ptrdiff_t;
+        using pointer = const T *;
+        using reference = const T &;
+
+        ConstIterator(const ArraySequence<T> *arraySequence, int index) : arraySequence(arraySequence), index(index) {}
+
+        ConstIterator(const ConstIterator &it) : arraySequence(it.arraySequence), index(it.index) {}
+
+        ConstIterator &operator++() {
+            index++;
+            return *this;
+        }
+
+        ConstIterator operator++(int) {
+            ConstIterator it = *this;
+            index++;
+            return it;
+        }
+
+        ConstIterator &operator--() {
+            index--;
+            return *this;
+        }
+
+        ConstIterator operator--(int) {
+            ConstIterator it = *this;
+            index--;
+            return it;
+        }
+
+        ConstIterator &operator+=(difference_type n) {
+            index += n;
+            return *this;
+        }
+
+        ConstIterator operator+(difference_type n) const {
+            return ConstIterator(arraySequence, index + n);
+        }
+
+        ConstIterator &operator-=(difference_type n) {
+            index -= n;
+            return *this;
+        }
+
+        ConstIterator operator-(difference_type n) const {
+            return ConstIterator(arraySequence, index - n);
+        }
+
+        difference_type operator-(const ConstIterator &it) const {
+            return index - it.index;
+        }
+
+        bool operator==(const ConstIterator &it) const {
+            return index == it.index;
+        }
+
+        bool operator!=(const ConstIterator &it) const {
+            return index != it.index;
+        }
+
+        bool operator<(const ConstIterator &it) const {
+            return index < it.index;
+        }
+
+        bool operator>(const ConstIterator &it) const {
+            return index > it.index;
+        }
+
+        bool operator<=(const ConstIterator &it) const {
+            return index <= it.index;
+        }
+
+        bool operator>=(const ConstIterator &it) const {
+            return index >= it.index;
+        }
+
+        const T &operator*() const {
+            return arraySequence->get(index);
+        }
+
+        const T *operator->() const {
+            return &arraySequence->get(index);
+        }
+    };
+
+    Iterator begin() {
+        return Iterator(this, 0);
     }
 
-    const T* begin() const {
-        return arrayList->begin();
+    Iterator end() {
+        return Iterator(this, this->getLength());
     }
 
-    const T* end() const {
-        return arrayList->end();
+    ConstIterator begin() const {
+        return ConstIterator(this, 0);
+    }
+
+    ConstIterator end() const {
+        return ConstIterator(this, this->getLength());
     }
 
     ~ArraySequence() { //деструктор

@@ -69,11 +69,11 @@ public:
         throw std::logic_error("Not implemented");
     }
 
-    void print() const override {
+    void print() const {
         container->print();
     }
 
-    T operator[](int index) const override {
+    T& operator[](int index) const override {
         throw std::logic_error("Not implemented");
     }
 

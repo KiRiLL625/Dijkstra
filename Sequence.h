@@ -40,9 +40,9 @@ public:
 
     virtual Sequence<T> *concat(Sequence<T> *sequence) const = 0; //функция, которая объединяет две последовательности
 
-    virtual void print() const = 0; //функция, которая выводит последовательность на экран
+    //virtual void print() const = 0; //функция, которая выводит последовательность на экран
 
-    virtual T operator[](int index) const = 0; //перегрузка оператора [] для удобства работы с последовательностью
+    virtual T& operator[](int index) const = 0; //перегрузка оператора [] для удобства работы с последовательностью
 
     virtual void clear() = 0; //функция, которая очищает последовательность
 

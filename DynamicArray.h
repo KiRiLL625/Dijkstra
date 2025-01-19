@@ -39,6 +39,11 @@ public:
         }
     }
 
+    DynamicArray(int capacity): capacity(capacity) {
+        this->length = capacity;
+        this->array = new T[this->capacity];
+    }
+
     T& get(int index) const {
         if (index < 0 || index >= this->length) {
             throw std::out_of_range("Index out of range");
