@@ -131,7 +131,9 @@ public:
     }
 
     ~DynamicArray() {
-        delete[] this->array;
+        if(this->array != nullptr) {
+            delete[] this->array;
+        }
     }
 };
 

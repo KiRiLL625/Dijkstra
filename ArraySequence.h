@@ -8,6 +8,7 @@
 #include "Sequence.h"
 #include <stdexcept>
 #include "DynamicArray.h"
+#include <fstream>
 
 std::ostream& operator<<(std::ostream& os, const std::pair<double, int>& p) {
     os << "(" << p.first << ", " << p.second << ")";
@@ -361,7 +362,9 @@ public:
     }
 
     ~ArraySequence() { //деструктор
-        delete this->arrayList;
+        if(this->arrayList != nullptr) {
+            delete this->arrayList;
+        }
     }
 };
 
