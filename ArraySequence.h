@@ -160,6 +160,9 @@ public:
         return last;
     }
 
+    int getCapacity() const {
+        return this->arrayList->getCapacity();
+    }
 
     class Iterator {
     private:
@@ -361,11 +364,13 @@ public:
         return ConstIterator(this, this->getLength());
     }
 
-    ~ArraySequence() { //деструктор
-        if(this->arrayList != nullptr) {
+    ~ArraySequence() {
+        //std::cout << "Deleting ArraySequence, length: " << arrayList->getLength() << std::endl;
+        if (this->arrayList != nullptr) {
             delete this->arrayList;
         }
     }
+
 };
 
 #endif //SEQUENCES_ARRAYSEQUENCE_H

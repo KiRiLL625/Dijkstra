@@ -37,6 +37,9 @@ public:
     }
 
     void addEdge(int from, int to, const EdgeContent& content, bool directed = false, int id = -1) {
+        if(!this->getVertices().contains_key(from) || !this->getVertices().contains_key(to)){
+            throw std::invalid_argument("Start or end vertex does not exist in the graph");
+        }
         if (!edges.contains_key(from)) {
             edges[from] = new ArraySequence<Edge>();
         }
@@ -123,7 +126,7 @@ public:
     template<typename VertexContent, typename EdgeContent>
     static Result dijkstra(const Graph<VertexContent, EdgeContent>& graph, int start, int end) {
         if (!graph.getVertices().contains_key(start) || !graph.getVertices().contains_key(end)) {
-            throw std::invalid_argument("Start or end vertex does not exist in the graph.");
+            throw std::invalid_argument("Start or end vertex does not exist in the graph");
         }
 
         Dictionary<int, double> distances;

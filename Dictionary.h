@@ -4,197 +4,231 @@
 #include "IDictionary.h"
 #include "ArraySequence.h"
 #include <stdexcept>
+#include <iostream>
 
-// Реализация Dictionary
 template <typename Key, typename Value>
 class Dictionary : public IDictionary<Key, Value> {
 private:
-    struct KeyValue { // Структура для хранения пары ключ-значение
+    struct KeyValue {
         Key key;
         Value value;
-        bool isOccupied = false; // Флаг, занята ли ячейка
+        bool isOccupied = false;
 
-        KeyValue() = default; // Конструктор по умолчанию
-
+        KeyValue() = default;
         KeyValue(const Key& key, const Value& value, bool isOccupied)
             : key(key), value(value), isOccupied(isOccupied) {}
     };
 
-    ArraySequence<KeyValue> table; // Хеш-таблица
-    size_t current_size; // Текущее количество элементов
+    ArraySequence<KeyValue>* table;
+    size_t current_size;
+    size_t capacity_;
 
-    size_t hash(const Key& key) const { // Хеш-функция (использует стандартную хеш-функцию для типа Key)
-        return std::hash<Key>{}(key) % table.getLength();
+    size_t hash(const Key& key) const {
+        //std::cout << "Hash function" << std::endl;
+        //std::cout << "Length: " << capacity_ << std::endl;
+        return std::hash<Key>{}(key) % capacity_;
     }
 
-    void rehash() { // Перехеширование
-        size_t new_capacity = table.getLength() * 2; // Увеличиваем вместимость вдвое
-        ArraySequence<KeyValue> new_table(new_capacity); // Создаем новую хеш-таблицу
+    void rehash() {
+        size_t old_capacity = capacity_;
+        size_t new_capacity = capacity_ * 2;
+        auto* new_table = new ArraySequence<KeyValue>(new_capacity);
 
-        for (const auto& entry : table) { // Перебираем все элементы старой таблицы
-            if (entry.isOccupied) { // Если ячейка занята
-                size_t new_index = std::hash<Key>{}(entry.key) % new_capacity; // Вычисляем новый индекс
-                while (new_table[new_index].isOccupied) { // Пока ячейка занята
-                    new_index = (new_index + 1) % new_capacity; // Пробуем следующую ячейку
+        for (size_t i = 0; i < new_capacity; ++i) {
+            new_table->append({});
+        }
+
+        for (size_t i = 0; i < capacity_; ++i) {
+            if ((*table)[i].isOccupied) {
+                size_t new_index = std::hash<Key>{}((*table)[i].key) % new_capacity;
+
+                while ((*new_table)[new_index].isOccupied) {
+                    new_index = (new_index + 1) % new_capacity;
                 }
-                new_table[new_index] = entry; // Помещаем элемент в новую таблицу
+
+                (*new_table)[new_index] = (*table)[i];
             }
         }
 
-        table = std::move(new_table); // Перемещаем новую таблицу в текущую
+        //std::cout << "Rehashing: Old capacity: " << old_capacity
+        //          << " New capacity: " << new_capacity << std::endl;
+
+        delete table;  // Удаляем старый массив
+        table = new_table;
+        capacity_ = new_capacity;
     }
 
 public:
-    Dictionary() : table(16), current_size(0) { // Конструктор по умолчанию
-        for (size_t i = 0; i < 16; ++i) {
-            table.append({}); // Добавляем элементы с isOccupied = false
+    Dictionary() : current_size(0), capacity_(16) {
+        table = new ArraySequence<KeyValue>(capacity_);
+        for (size_t i = 0; i < capacity_; ++i) {
+            table->append({});
         }
     }
 
-    explicit Dictionary(size_t initial_capacity) : table(initial_capacity), current_size(0) {
-        for (size_t i = 0; i < initial_capacity; ++i) {
-            table.append({}); // Добавляем элементы с isOccupied = false
+    explicit Dictionary(size_t initial_capacity)
+        : current_size(0), capacity_(initial_capacity) {
+        table = new ArraySequence<KeyValue>(capacity_);
+        for (size_t i = 0; i < capacity_; ++i) {
+            table->append({});
         }
     }
 
-    size_t count() const override { // Количество элементов
+    ~Dictionary() {
+        delete table;
+    }
+
+    size_t count() const override {
         return current_size;
     }
 
-    size_t capacity() const override { // Вместимость
-        return table.getLength();
+    size_t capacity() const override {
+        return capacity_;
     }
 
-    bool contains_key(const Key& key) const override { // Проверка наличия ключа
-        size_t index = hash(key); // Вычисляем индекс
-        size_t start_index = index; // Запоминаем начальный индекс
-
-        do { // Пока не найдем пустую ячейку или ячейку с нужным ключом
-            if (!table[index].isOccupied) { // Если ячейка пуста
-                return false;
-            }
-            if (table[index].key == key) { // Если ключ найден
-                return true;
-            }
-            index = (index + 1) % table.getLength(); // Переходим к следующей ячейке
-        } while (index != start_index); // Пока не вернемся в начальную ячейку
-        // Используем именно do-while, чтобы хотя бы один раз проверить начальную ячейку
-
-        return false; // Если не нашли ключ
-    }
-
-    void add(const Key& key, const Value& value) override { // Добавление элемента
-        if (current_size >= table.getLength() / 2) { // Если таблица заполнена на 50% и более
-            rehash(); // Перехешируем
-        }
-
-        size_t index = hash(key); // Вычисляем индекс
-        while (table[index].isOccupied) { // Пока ячейка занята
-            if (table[index].key == key) { // Если ключ найден
-                table[index].value = value; // Обновляем значение
-                return; // Завершаем функцию
-            }
-            index = (index + 1) % table.getLength(); // Переходим к следующей ячейке
-        }
-
-        table[index] = {key, value, true}; // Добавляем элемент
-        ++current_size; // Увеличиваем количество элементов
-    }
-
-    void remove(const Key& key) override { // Удаление элемента
-        size_t index = hash(key); // Вычисляем индекс
-        size_t start_index = index; // Запоминаем начальный индекс
-
-        do {
-            if (!table[index].isOccupied) { // Если ячейка пуста
-                throw std::runtime_error("Key not found"); // Выбрасываем исключение
-            }
-            if (table[index].key == key) { // Если ключ найден
-                table[index].isOccupied = false; // Освобождаем ячейку
-                --current_size; // Уменьшаем количество элементов
-                return; // Завершаем функцию
-            }
-            index = (index + 1) % table.getLength(); // Переходим к следующей ячейке
-        } while (index != start_index); // Пока не вернемся в начальную ячейку
-
-        throw std::runtime_error("Key not found"); // Если не нашли ключ
-    }
-
-    Value& get(const Key& key) override { // Получение значения по ключу
-        size_t index = hash(key); // Вычисляем индекс
-        size_t start_index = index; // Запоминаем начальный индекс
-
-        do { // Пока не найдем пустую ячейку или ячейку с нужным ключом
-            if (!table[index].isOccupied) { // Если ячейка пуста
-                throw std::runtime_error("Key not found"); // Выбрасываем исключение
-            }
-            if (table[index].key == key) { // Если ключ найден
-                return table[index].value; // Возвращаем значение
-            }
-            index = (index + 1) % table.getLength(); // Переходим к следующей ячейке
-        } while (index != start_index); // Пока не вернемся в начальную ячейку
-
-        throw std::runtime_error("Key not found"); // Если не нашли ключ
-    }
-
-    const Value& get(const Key& key) const override { // То же самое, но теперь const
+    bool contains_key(const Key& key) const override {
         size_t index = hash(key);
         size_t start_index = index;
 
         do {
-            if (!table[index].isOccupied) {
+            if (!(*table)[index].isOccupied) {
+                return false;
+            }
+            if ((*table)[index].key == key) {
+                return true;
+            }
+            index = (index + 1) % capacity_;
+        } while (index != start_index);
+
+        return false;
+    }
+
+    void add(const Key& key, const Value& value) override {
+        if (current_size >= capacity_ / 2) {
+            //std::cout << "Rehashing triggered. Current size: " << current_size
+             //         << " Capacity: " << capacity_ << std::endl;
+            rehash();
+        }
+
+        size_t index = hash(key);
+        while ((*table)[index].isOccupied) {
+            if ((*table)[index].key == key) {
+                (*table)[index].value = value;
+                return;
+            }
+            index = (index + 1) % capacity_;
+        }
+
+        (*table)[index] = {key, value, true};
+        ++current_size;
+        //std::cout << "Added key: " << key << " at index: " << index
+        //          << " after " << probeCount << " probes" << std::endl;
+    }
+
+    void remove(const Key& key) override {
+        size_t index = hash(key);
+        size_t start_index = index;
+
+        do {
+            if (!(*table)[index].isOccupied) {
                 throw std::runtime_error("Key not found");
             }
-            if (table[index].key == key) {
-                return table[index].value;
+            if ((*table)[index].key == key) {
+                (*table)[index].isOccupied = false;
+                --current_size;
+                return;
             }
-            index = (index + 1) % table.getLength();
+            index = (index + 1) % capacity_;
         } while (index != start_index);
 
         throw std::runtime_error("Key not found");
     }
 
-    Value& operator[](const Key& key) override { // Оператор доступа по ключу
-        size_t index = hash(key); // Вычисляем индекс
-        while (table[index].isOccupied) { // Пока ячейка занята
-            if (table[index].key == key) {
-                return table[index].value;
+    Value& get(const Key& key) override {
+        size_t index = hash(key);
+        size_t start_index = index;
+
+        do {
+            if (!(*table)[index].isOccupied) {
+                throw std::runtime_error("Key not found");
             }
-            index = (index + 1) % table.getLength();
-        }
+            if ((*table)[index].key == key) {
+                return (*table)[index].value;
+            }
+            index = (index + 1) % capacity_;
+        } while (index != start_index);
 
-        if (current_size >= table.getLength() / 2) { // Если таблица заполнена на 50% и более
-            rehash(); // Перехешируем
-            return (*this)[key]; // Рекурсивно вызываем оператор с новой таблицей
-        }
-
-        table[index] = {key, Value{}, true}; // Добавляем элемент ({} нужно для Value, чтобы создать пустой объект)
-        ++current_size; // Увеличиваем количество элементов
-        return table[index].value; // Возвращаем значение
+        throw std::runtime_error("Key not found");
     }
 
-    void clear() override { // Очистка словаря
-        for (auto& entry : table) { // Перебираем все элементы
-            entry.isOccupied = false; // Освобождаем ячейку
+    const Value& get(const Key& key) const override {
+        size_t index = hash(key);
+        size_t start_index = index;
+
+        do {
+            if (!(*table)[index].isOccupied) {
+                throw std::runtime_error("Key not found");
+            }
+            if ((*table)[index].key == key) {
+                return (*table)[index].value;
+            }
+            index = (index + 1) % capacity_;
+        } while (index != start_index);
+
+        throw std::runtime_error("Key not found");
+    }
+
+    Value& operator[](const Key& key) override {
+        size_t index = hash(key);
+        while ((*table)[index].isOccupied) {
+            if ((*table)[index].key == key) {
+                return (*table)[index].value;
+            }
+            index = (index + 1) % capacity_;
         }
-        current_size = 0; // Обнуляем количество элементов
+
+        if (current_size >= capacity_ / 2) {
+            rehash();
+            index = hash(key);
+        }
+
+        (*table)[index] = {key, Value{}, true};
+        ++current_size;
+        return (*table)[index].value;
+    }
+
+    void clear() override {
+        for (size_t i = 0; i < capacity_; ++i) {
+            (*table)[i].isOccupied = false;
+        }
+        current_size = 0;
     }
 
     auto begin() {
-        return table.begin();
+        return table->begin();
     }
 
     auto end() {
-        return table.end();
+        return table->end();
     }
 
     auto begin() const {
-        return table.begin();
+        return table->begin();
     }
 
     auto end() const {
-        return table.end();
+        return table->end();
+    }
+
+    ArraySequence<Key> keys() const {
+        ArraySequence<Key> keyList;
+        for (const auto& entry : *table) {
+            if (entry.isOccupied) {
+                keyList.append(entry.key);
+            }
+        }
+        return keyList;
     }
 };
 
-#endif //L3_DICTIONARY_H
+#endif // L3_DICTIONARY_H

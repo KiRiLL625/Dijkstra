@@ -11,6 +11,7 @@ private:
     int capacity;
 
     void resize() {
+        //std::cout << "Resizing from " << this->capacity << " to " << this->capacity * 2 << std::endl;
         this->capacity *= 2;
         T *newArray = new T[this->capacity];
         for (int i = 0; i < this->length; i++) {
@@ -19,6 +20,7 @@ private:
         delete[] this->array;
         this->array = newArray;
     }
+
 
 public:
     DynamicArray() : length(0), capacity(10) {
@@ -32,17 +34,20 @@ public:
         }
     }
 
-    DynamicArray(const DynamicArray<T> &dynamicArray) : length(dynamicArray.length), capacity(dynamicArray.capacity) {
+    DynamicArray(const DynamicArray<T> &dynamicArray)
+        : length(dynamicArray.length), capacity(dynamicArray.capacity) {
+        //std::cout << "Copying DynamicArray. Length: " << length << ", Capacity: " << capacity << std::endl;
         this->array = new T[this->capacity];
         for (int i = 0; i < this->length; i++) {
             this->array[i] = dynamicArray.array[i];
         }
     }
 
-    DynamicArray(int capacity): capacity(capacity) {
-        this->length = capacity;
+
+    DynamicArray(int capacity) : capacity(capacity), length(0) {
         this->array = new T[this->capacity];
     }
+
 
     T& get(int index) const {
         if (index < 0 || index >= this->length) {
@@ -75,7 +80,7 @@ public:
     }
 
     void insertAt(T value, int index) {
-        if (index < 0 || index >= this->length) {
+        if (index < 0 || index > this->length) {
             throw std::out_of_range("Index out of range");
         }
         if (this->length == this->capacity) {
@@ -130,10 +135,12 @@ public:
         return array + length;
     }
 
+    int getCapacity() const {
+        return this->capacity;
+    }
+
     ~DynamicArray() {
-        if(this->array != nullptr) {
-            delete[] this->array;
-        }
+        delete[] this->array;
     }
 };
 
